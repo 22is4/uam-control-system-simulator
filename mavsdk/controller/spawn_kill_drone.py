@@ -92,7 +92,13 @@ def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
         # 종료 후 PID 파일에서 해당 인스턴스 정보를 삭제
         with open(INSTANCE_FILE_PATH, "w") as f:
             for line in lines:
-                instance, pid = line.strip().split(',')
+                line = line.strip()
+                
+                # 공백 줄이면 넘어가기
+                if not line:
+                    continue
+                
+                instance, pid = line.split(',')
                 if int(instance) != instance_id:
                     f.write(line + "\n")
 
