@@ -52,8 +52,15 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
     #print(f"실행할 PX4 명령어: {px4_command}")
     
     # 명령어 실행 및 python PID 저장 (나중에 파이썬 프로세스가 종료될 때 자식들도 같이 종료하기 위함)
-    process = subprocess.Popen(px4_command, shell=True, preexec_fn=os.setsid)
-    pid = os.getpid()  # PID 추출
+    process = subprocess.Popen(px4_command, shell=True, preexec_fn=os.setsid) # 프로세스 그룹으로 묶기
+
+    position_process = subprocess.Popen(
+        ["python3", "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/print_position.py", str(instance_id)],
+        preexec_fn=os.setsid
+    )
+    # os.setpgid(position_process.pid, os.getpgid(process.pid))
+
+    pid = os.getpid()  # 파이썬 프로세스 PID 추출
     # instance id와 PID 함께 저장
     with open(INSTANCE_FILE_PATH, "a") as f:
         f.write(f"{instance_id},{pid}\n")
@@ -66,6 +73,7 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
         # CTRL + C 입력 시 프로세스 그룹을 종료
         print(f"프로세스 그룹 종료: {pid}")
         os.killpg(os.getpgid(process.pid), signal.SIGINT)
+        os.killpg(os.getpgid(position_process.pid), signal.SIGINT)
 
 def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
     
