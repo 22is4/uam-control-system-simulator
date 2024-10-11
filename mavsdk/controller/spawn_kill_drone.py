@@ -4,6 +4,7 @@ import os
 import argparse
 import signal
 import subprocess
+import time
 
 # 홈 기본 좌표
 home_latitude = 35.8907
@@ -53,10 +54,11 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
     
     # 명령어 실행 및 python PID 저장 (나중에 파이썬 프로세스가 종료될 때 자식들도 같이 종료하기 위함)
     process = subprocess.Popen(px4_command, shell=True, preexec_fn=os.setsid) # 프로세스 그룹으로 묶기
-
+    #time.sleep(10)
     position_process = subprocess.Popen(
         ["python3", "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/print_position.py", str(instance_id)],
-        preexec_fn=os.setsid
+        preexec_fn=os.setsid,
+        
     )
     # os.setpgid(position_process.pid, os.getpgid(process.pid))
 
@@ -73,7 +75,10 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
         # CTRL + C 입력 시 프로세스 그룹을 종료
         print(f"프로세스 그룹 종료: {pid}")
         os.killpg(os.getpgid(process.pid), signal.SIGINT)
+        print(f"px4 - {process.pid} 종료")
         os.killpg(os.getpgid(position_process.pid), signal.SIGINT)
+        print(f"position - {position_process.pid} 종료")
+        exit(0)
 
 def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
     
@@ -91,7 +96,7 @@ def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
         instance, pid = line.strip().split(',')
         if int(instance) == instance_id:
             pid_to_kill = int(pid)
-            break
+            
     
     if pid_to_kill:
         print(f"인스턴스에 해당하는 프로세스 중지: {pid_to_kill}")
@@ -112,6 +117,8 @@ def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
 
     else:
         print(f"해당 인스턴스가 존재하지 않음: {instance_id}")
+        
+    exit(0)
 
 if __name__ == "__main__":
     # 명령줄 인수 처리
