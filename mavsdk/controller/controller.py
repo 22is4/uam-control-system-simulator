@@ -4,6 +4,7 @@ import os
 import signal
 import json
 import aiohttp
+import time
 
 # spawn_kill_drone.py 및 mission.py의 경로
 SPAWN_KILL_DRONE_SCRIPT = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/spawn_kill_drone.py"
@@ -42,8 +43,13 @@ async def spawn_drone(instance_id, latitude, longitude):
         process = subprocess.Popen(
             ["python3", SPAWN_KILL_DRONE_SCRIPT, str(instance_id), str(latitude), str(longitude)]
         )
+        print(f"controller - {os.getpid()}")
+        print(f"control_spawn - {process.pid}")
         # process.wait()는 필요하지 않으므로 삭제, 생성 작업을 비동기적으로 계속 처리
         print(f"드론 인스턴스 {instance_id} 생성 요청 완료")
+
+        # await asyncio.sleep(1)
+        # process.wait()
 
     except Exception as e:
         print(f"드론 생성 중 오류 발생: {str(e)}")
@@ -56,8 +62,13 @@ async def kill_drone(instance_id):
         process = subprocess.Popen(
             ["python3", SPAWN_KILL_DRONE_SCRIPT, "--kill", str(instance_id), "0", "0"]
         )
+        print(f"controller - {os.getpid()}")
+        print(f"control_kill - {process.pid}")
         # process.wait()는 필요하지 않으므로 삭제
         print(f"드론 인스턴스 {instance_id} 삭제 요청 완료")
+
+        # await asyncio.sleep(1)
+        # process.wait()
 
     except Exception as e:
         print(f"드론 삭제 중 오류 발생: {str(e)}")
@@ -68,9 +79,9 @@ async def run_mission(instance_id, mission_items):
     try:
         # mission.py는 mission_items과 함께 실행
         process = await asyncio.create_subprocess_exec(
-            "python3", MISSION_SCRIPT, json.dumps(mission_items), str(instance_id)
+            "python3", MISSION_SCRIPT, str(instance_id), json.dumps(mission_items)
         )
-        await process.wait()
+        # await process.wait()
 
         print(f"드론 인스턴스 {instance_id} 미션 수행 완료")
 
@@ -92,7 +103,8 @@ async def listen_for_commands():
             await asyncio.sleep(1)  # 1초 대기 후 다시 명령 확인
 
         except Exception as e:
-            print(f"명령 수신 오류: {e}")
+            print(f"명령 대기 중...")
+            time.sleep(1)
 
 
 async def main():
