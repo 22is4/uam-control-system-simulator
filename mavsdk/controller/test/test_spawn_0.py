@@ -31,10 +31,10 @@ def send_delete_drone_command(instance_id):
         print(f"드론 삭제 명령 전송 실패: {response.status_code}")
 
 if __name__ == "__main__":
-    # 드론 생성 테스트 (instance_id 1)
-    send_create_drone_command(1, 35.8907, 128.6122)
-    time.sleep(5)  # 5초 대기
+    # 드론 생성 테스트 (instance_id 0)
+    send_create_drone_command(0, 35.8907, 128.6122)
+    # time.sleep(15)  # 5초 대기
 
-    # 드론 삭제 테스트 (instance_id 1)
-    #send_delete_drone_command(1)
+    # 드론 삭제 테스트 (instance_id 0)
+    # send_delete_drone_command(0)
 
