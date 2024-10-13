@@ -40,8 +40,8 @@ async def spawn_drone(instance_id, latitude, longitude):
     """spawn_kill_drone.py를 통해 드론 인스턴스를 생성"""
     try:
         # 드론을 생성하기 위해 spawn_kill_drone.py를 실행
-        process = subprocess.Popen(
-            ["python3", SPAWN_KILL_DRONE_SCRIPT, str(instance_id), str(latitude), str(longitude)]
+        process = await asyncio.create_subprocess_exec(
+            "python3", SPAWN_KILL_DRONE_SCRIPT, str(instance_id), str(latitude), str(longitude)
         )
         print(f"controller - {os.getpid()}")
         print(f"control_spawn - {process.pid}")
@@ -59,8 +59,8 @@ async def kill_drone(instance_id):
     """spawn_kill_drone.py를 통해 드론 인스턴스를 삭제"""
     try:
         # 드론을 삭제하기 위해 spawn_kill_drone.py의 --kill 옵션 실행
-        process = subprocess.Popen(
-            ["python3", SPAWN_KILL_DRONE_SCRIPT, "--kill", str(instance_id), "0", "0"]
+        process = await asyncio.create_subprocess_exec(
+            "python3", SPAWN_KILL_DRONE_SCRIPT, "--kill", str(instance_id), "0", "0"
         )
         print(f"controller - {os.getpid()}")
         print(f"control_kill - {process.pid}")
