@@ -45,7 +45,7 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
     # PX4 명령어 작성
     # 왜인진 모르겠지만, y와 x의 자리가 바뀌어야 제대로 된 좌표에 드론이 생성됨
     px4_command = (
-        f"PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
+        f"HEADLESS=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
         f"PX4_GZ_MODEL=x500 ./build/px4_sitl_default/bin/px4 -i {instance_id}"
     )
 
