@@ -1,0 +1,14 @@
+{
+    "drones": [
+        {
+            "instance_id": 0,
+            "latitude": 35.8907,
+            "longitude": 128.6122,
+            "mission_items": [
+                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 50, "speed": 10},
+                {"latitude": 35.8824, "longitude": 128.6039, "altitude": 50, "speed": 10},
+                {"latitude": 35.8824, "longitude": 128.6122, "altitude": 50, "speed": 10}
+            ]
+        }
+    ]
+}

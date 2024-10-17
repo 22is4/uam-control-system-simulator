@@ -5,14 +5,38 @@ import signal
 import json
 import aiohttp
 import time
+import sys
 
 # spawn_kill_drone.py 및 mission.py의 경로
 SPAWN_KILL_DRONE_SCRIPT = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/spawn_kill_drone.py"
 MISSION_SCRIPT = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/mission.py"
+SCENARIO_DIR = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/scenario"
 
 # 백엔드 URL 설정 (예시)
 BACKEND_URL = "http://localhost:5000/api/drone"
 
+async def read_scenario_file(scenario_id):
+    """Read scenario file and return drone info."""
+    scenario_number = f"scenario_{scenario_id}.json"
+    file_path = os.path.join(SCENARIO_DIR, scenario_number)
+    print(file_path)
+    try:
+        with open(file_path, "r") as f:
+            drone_data = json.load(f)
+        return drone_data
+    except Exception as e:
+        print(f"Error reading scenario file: {e}")
+        return []
+    
+async def request_backend_approval(drone_data):
+    """백엔드에서 허가 요청"""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{BACKEND_URL}/approve", json=drone_data) as resp:
+            if resp.status == 200:
+                return await resp.json()  # 승인된 데이터
+            else:
+                print(f"백엔드 허가 요청 실패: {resp.status}")
+                return None
 
 async def handle_command(command):
     """비동기적으로 명령을 처리 (생성, 삭제, 미션)"""
@@ -28,13 +52,21 @@ async def handle_command(command):
         elif command_type == 1:  # 드론 삭제
             await kill_drone(instance_id)
 
-        elif command_type == 2:  # 미션 수행
-            mission_items = command.get("mission_items")
-            await run_mission(instance_id, mission_items)
+        # elif command_type == 2:  # 미션 수행
+        #     drone_data = command.get("drones")
+        #     await run_mission(drone_data)
 
     except Exception as e:
         print(f"명령 처리 중 오류 발생: {str(e)}")
 
+
+async def spawn_drones(drone_data):
+    """드론 인스턴스 생성"""
+    for drone in drone_data:
+        instance_id = drone["instance_id"]
+        latitude = drone["latitude"]
+        longitude = drone["longitude"]
+        await spawn_drone(instance_id, latitude, longitude)
 
 async def spawn_drone(instance_id, latitude, longitude):
     """spawn_kill_drone.py를 통해 드론 인스턴스를 생성"""
@@ -54,6 +86,10 @@ async def spawn_drone(instance_id, latitude, longitude):
     except Exception as e:
         print(f"드론 생성 중 오류 발생: {str(e)}")
 
+async def kill_drones(drone_data):
+    """모든 드론 인스턴스를 종료"""
+    for drone in drone_data:
+        await kill_drone(drone["instance_id"])
 
 async def kill_drone(instance_id):
     """spawn_kill_drone.py를 통해 드론 인스턴스를 삭제"""
@@ -74,16 +110,16 @@ async def kill_drone(instance_id):
         print(f"드론 삭제 중 오류 발생: {str(e)}")
 
 
-async def run_mission(instance_id, mission_items):
+async def run_mission(drone_data):
     """mission.py를 통해 미션을 수행"""
     try:
         # mission.py는 mission_items과 함께 실행
         process = await asyncio.create_subprocess_exec(
-            "python3", MISSION_SCRIPT, str(instance_id), json.dumps(mission_items)
+            "python3", MISSION_SCRIPT, json.dumps(drone_data)
         )
         # await process.wait()
 
-        print(f"드론 인스턴스 {instance_id} 미션 수행 완료")
+        print(f"드론 인스턴스 미션 전달")
 
     except Exception as e:
         print(f"미션 수행 오류: {e}")
@@ -107,13 +143,35 @@ async def listen_for_commands():
             time.sleep(1)
 
 
-async def main():
-    """메인 이벤트 루프"""
-    # 명령을 수신하는 비동기 루프 시작
-    command_listener = asyncio.create_task(listen_for_commands())
+async def main(scenario_id):
+    
+    scenario_data = await read_scenario_file(scenario_id)
 
-    await command_listener
+    drone_data = scenario_data['drones']
 
+    # 드론 생성
+    await spawn_drones(drone_data)
+    print("드론 생성, 10초 기다리기")
+    time.sleep(10)
+    # 백엔드에 미션 전송
+    approval = await request_backend_approval(drone_data)
+
+    if approval and approval["status"] == "approved":
+        # mission_override 확인
+        if "mission_override" in approval:
+            mission_override = approval["mission_override"]
+            if mission_override:
+                for drone in drone_data:
+                    for override in mission_override:
+                        if drone["instance_id"] == override["instance_id"]:
+                            drone["mission_items"] = override["mission_items"]
+
+        await run_mission(drone_data)
+        await listen_for_commands()
+    else:
+        print("미션이 백엔드에서 거부되었습니다. 모든 드론을 종료합니다.")
+        await kill_drones(drone_data)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    scenario_id = sys.argv[1]
+    asyncio.run(main(scenario_id))

@@ -3,144 +3,69 @@
 import asyncio
 import sys
 import json
-
 from mavsdk import System
-from mavsdk.mission import (MissionItem, MissionPlan)
+from mavsdk.mission import MissionItem, MissionPlan
 
+async def run_all_missions(drones_data):
+    for drone_data in drones_data:
+        drone = System()
+        instance_id = drone_data["instance_id"]
+        await drone.connect(system_address=f"udp://:{14540 + int(instance_id)}")
+        print(f"Waiting for drone {instance_id} to connect...")
+        
+        # 드론이 연결될 때까지 대기
+        async for state in drone.core.connection_state():
+            if state.is_connected:
+                print(f"-- Connected to drone {instance_id}!")
+                break
 
-async def run(instance_id, mission_items):
-    drone = System()
-    await drone.connect(system_address=f"udp://:{14540 + int(instance_id)}")
+        # 미션 업로드 및 시작을 순차적으로 실행
+        await upload_and_start_mission(drone, drone_data["mission_items"])
+        print(f"드론 {instance_id} 업로드 완료, 잠시 대기")
+        await asyncio.sleep(3)
 
-    print("Waiting for drone to connect...")
-    async for state in drone.core.connection_state():
-        if state.is_connected:
-            print(f"-- Connected to drone!")
-            break
-
+async def upload_and_start_mission(drone, mission_items):
+    # 기존 미션 중지 및 제거
     await drone.mission.pause_mission()
     await drone.mission.clear_mission()
-
-    print_mission_progress_task = asyncio.ensure_future(
-        print_mission_progress(drone))
-
-    running_tasks = [print_mission_progress_task]
-    termination_task = asyncio.ensure_future(
-        observe_is_in_air(drone, running_tasks))
-
-    # mission_items = []
-    # mission_items.append(MissionItem(47.398039859999997,
-    #                                  8.5455725400000002,
-    #                                  25,
-    #                                  10,
-    #                                  True,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.CameraAction.NONE,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.VehicleAction.NONE))
-    # mission_items.append(MissionItem(47.398036222362471,
-    #                                  8.5450146439425509,
-    #                                  25,
-    #                                  10,
-    #                                  True,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.CameraAction.NONE,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.VehicleAction.NONE))
-    # mission_items.append(MissionItem(47.397825620791885,
-    #                                  8.5450092830163271,
-    #                                  25,
-    #                                  10,
-    #                                  True,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.CameraAction.NONE,
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  float('nan'),
-    #                                  MissionItem.VehicleAction.NONE))
 
     mission_plan = MissionPlan([MissionItem(
         item["latitude"], 
         item["longitude"], 
         item["altitude"], 
         item["speed"],
-        True,
-        float('nan'),
-        float('nan'),
+        True,   # is_fly_through
+        float('nan'),   # gimbal pitch
+        float('nan'),   # gimbal yaw
         MissionItem.CameraAction.NONE,
-        float('nan'),
-        float('nan'),
-        float('nan'),
-        float('nan'),
-        float('nan'),
+        float('nan'),   # loiter time
+        float('nan'),   # acceptance radius
+        float('nan'),   # yaw angle
+        float('nan'),   # land precision
+        float('nan'),   # action delay
         MissionItem.VehicleAction.NONE
     ) for item in mission_items])
 
-    await drone.mission.set_return_to_launch_after_mission(False)
-
+    # 미션 업로드
     print("-- Uploading mission")
     await drone.mission.upload_mission(mission_plan)
 
+    # 드론의 글로벌 포지션 확인
     print("Waiting for drone to have a global position estimate...")
     async for health in drone.telemetry.health():
         if health.is_global_position_ok and health.is_home_position_ok:
             print("-- Global position estimate OK")
             break
 
+    # 드론을 무장하고 미션 시작
     print("-- Arming")
     await drone.action.arm()
 
     print("-- Starting mission")
     await drone.mission.start_mission()
 
-    # await termination_task
-
-
-async def print_mission_progress(drone):
-    async for mission_progress in drone.mission.mission_progress():
-        print(f"Mission progress: "
-              f"{mission_progress.current}/"
-              f"{mission_progress.total}")
-
-
-async def observe_is_in_air(drone, running_tasks):
-    """ Monitors whether the drone is flying or not and
-    returns after landing """
-
-    was_in_air = False
-
-    async for is_in_air in drone.telemetry.in_air():
-        if is_in_air:
-            was_in_air = is_in_air
-
-        if was_in_air and not is_in_air:
-            for task in running_tasks:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-            await asyncio.get_event_loop().shutdown_asyncgens()
-
-            return
-
+    print("Mission started successfully")
 
 if __name__ == "__main__":
-
-    instance_id = sys.argv[1]
-    mission_items = json.loads(sys.argv[2])
-    # Run the asyncio loop
-    asyncio.run(run(instance_id, mission_items))
+    drone_data = json.loads(sys.argv[1])
+    asyncio.run(run_all_missions(drone_data))
