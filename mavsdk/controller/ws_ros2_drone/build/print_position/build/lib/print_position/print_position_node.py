@@ -13,7 +13,7 @@ class CoordinateSender(Node):
         super().__init__('coordinate_sender')
 
         self.instance_id = instance_id
-        self.backend_url = "http://localhost:5000/api/drone/position"
+        self.backend_url = "http://211.235.65.244:4999/uam/command/coordinate/update"
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -39,7 +39,7 @@ class CoordinateSender(Node):
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg):
-        # print("msg 수신됨")
+        print("msg 수신됨")
         coordinate = {
             "instance_id": self.instance_id,
             "latitude": msg.lat,
@@ -48,6 +48,7 @@ class CoordinateSender(Node):
         }
 
         try:
+            print(f"backend sending to {self.backend_url}...")
             response = requests.post(self.backend_url, json=coordinate)
             print(f'Sent to backend: {response.status_code}, instance: {coordinate["instance_id"]} lat: {coordinate["latitude"]} lon: {coordinate["longitude"]}')
         except Exception as e:
@@ -63,6 +64,7 @@ def main():
     coordinate_sender = CoordinateSender(instance_id)
 
     try:
+        print(f"print position {instance_id} 실행")
         rclpy.spin(coordinate_sender)
     
     except KeyboardInterrupt:

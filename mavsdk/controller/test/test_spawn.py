@@ -1,5 +1,6 @@
 import requests
 import time
+import sys
 
 # Flask 서버 엔드포인트
 BACKEND_URL = "http://localhost:5000/api/send-command"
@@ -31,8 +32,11 @@ def send_delete_drone_command(instance_id):
         print(f"드론 삭제 명령 전송 실패: {response.status_code}")
 
 if __name__ == "__main__":
+    instance_id = int(sys.argv[1])
+    lat = float(sys.argv[2])
+    lon = float(sys.argv[3])
     # 드론 생성 테스트 (instance_id 0)
-    send_create_drone_command(0, 35.8907, 128.6122)
+    send_create_drone_command(instance_id, lat, lon)
     # time.sleep(15)  # 5초 대기
 
     # 드론 삭제 테스트 (instance_id 0)
