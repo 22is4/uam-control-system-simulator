@@ -150,7 +150,7 @@ async def spawn_drones(drone_data):
         latitude = drone["latitude"]
         longitude = drone["longitude"]
         await spawn_drone(instance_id, latitude, longitude)
-        #await asyncio.sleep(3)
+        await asyncio.sleep(1)
 
 async def spawn_drone(instance_id, latitude, longitude):
     """spawn_kill_drone.py를 통해 드론 인스턴스를 생성"""

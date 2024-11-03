@@ -22,14 +22,16 @@ async def run_all_missions(drones_data):
                 break
 
         # 미션 업로드 및 시작을 순차적으로 실행
-        await upload_and_start_mission(drone, drone_data["mission_items"])
+        await upload_and_start_mission(drone, drone_data["mission_items"], drone_data["speed"])
         print(f"드론 {instance_id} 업로드 완료")
         # await asyncio.sleep(1)
 
-async def upload_and_start_mission(drone, mission_items):
+async def upload_and_start_mission(drone, mission_items, init_speed):
     # 기존 미션 중지 및 제거
     await drone.mission.pause_mission()
     await drone.mission.clear_mission()
+
+    await drone.action.set_maximum_speed(init_speed)
 
     mission_plan = MissionPlan([MissionItem(
         item["latitude"], 
