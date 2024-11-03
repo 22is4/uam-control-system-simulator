@@ -8,21 +8,23 @@ from mavsdk.mission import MissionItem, MissionPlan
 
 async def run_all_missions(drones_data):
     for drone_data in drones_data:
-        drone = System()
+        # print(f"drone_data: {drone_data}, type: {type(drone_data)}")
         instance_id = drone_data["instance_id"]
+        drone = System(port=50051 + instance_id * 2, sysid=instance_id + 1)
+        print(f"-- Start waiting {instance_id}")
         await drone.connect(system_address=f"udp://:{14540 + int(instance_id)}")
-        print(f"Waiting for drone {instance_id} to connect...")
+        print(f"-- Waiting for drone {instance_id} to connect...")
         
         # 드론이 연결될 때까지 대기
         async for state in drone.core.connection_state():
             if state.is_connected:
-                print(f"-- Connected to drone {instance_id}!")
+                print(f"-- Connected to drone {instance_id}!!")
                 break
 
         # 미션 업로드 및 시작을 순차적으로 실행
         await upload_and_start_mission(drone, drone_data["mission_items"])
-        print(f"드론 {instance_id} 업로드 완료, 잠시 대기")
-        await asyncio.sleep(3)
+        print(f"드론 {instance_id} 업로드 완료")
+        # await asyncio.sleep(1)
 
 async def upload_and_start_mission(drone, mission_items):
     # 기존 미션 중지 및 제거
@@ -66,6 +68,20 @@ async def upload_and_start_mission(drone, mission_items):
 
     print("Mission started successfully")
 
+async def cancel_all_tasks():
+    """Cancel all currently running asyncio tasks."""
+    tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+    print(tasks)
+    for task in tasks:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
 if __name__ == "__main__":
+    #print(f"sys: {sys.argv[1]}")
     drone_data = json.loads(sys.argv[1])
+    #print(f"loaded drone_data: {drone_data}")
+    
     asyncio.run(run_all_missions(drone_data))
