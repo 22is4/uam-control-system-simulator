@@ -5,10 +5,13 @@ import argparse
 import signal
 import subprocess
 import time
+import requests
 
 # 홈 기본 좌표
 home_latitude = 35.8907
 home_longitude = 128.6122
+
+BACKEND_URL = "http://localhost:5000"
 
 # PX4-Autopilot 절대 경로 설정 (환경에 따라 수정)
 PX4_AUTOPILOT_DIR = "/home/rkdwhddud/uam-control-system-simulator/PX4-Autopilot"
@@ -77,6 +80,16 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
         f.write(f"{instance_id},{pid}\n")
         print(f"instance {instance_id} 작성 완료")
 
+    creation_data = {
+        "type": 0,  # 드론 생성 명령
+        "instance_id": instance_id,
+        "latitude": target_latitude,
+        "longitude": target_longitude
+    }
+
+    res = requests.post(f"{BACKEND_URL}/uam/command/create", json=creation_data)
+    print(f"드론 {instance_id} 생성 데이터 전송 완료: {res.json().get('message')}")
+
     try:
         # 프로세스가 끝날 때까지 대기
         process.wait()
@@ -89,6 +102,14 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
         # print(f"position - {position_process.pid} 종료")
         os.killpg(os.getpgid(print_process.pid), signal.SIGINT)
         print(f"ros2 - {print_process.pid} 종료")
+
+        delete_data = {
+            "type": 1,  # 드론 삭제 명령
+            "instance_id": instance_id
+        }
+        res = requests.delete(f"{BACKEND_URL}/uam/command/delete", json=delete_data)
+        print(f"드론 종료 데이터 전송 완료: {res.json().get('message')}")
+
         exit(0)
 
 def kill_px4_process(instance_id): # 프로세스 종료시키는 함수
