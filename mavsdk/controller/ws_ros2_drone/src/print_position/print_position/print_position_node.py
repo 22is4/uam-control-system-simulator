@@ -7,14 +7,35 @@ import sys
 import asyncio
 import aiohttp
 import math
+import os
+from dotenv import load_dotenv
+
+def load_project_env():
+    # 현재 파일의 절대 경로를 얻어냄
+    current_file_path = os.path.abspath(__file__)
+    
+    # 최상위 디렉토리 'uam-control-system-simulator'를 찾음
+    project_root = "uam-control-system-simulator"
+    project_root_index = current_file_path.find(project_root)
+    
+    if project_root_index == -1:
+        raise FileNotFoundError(f"'{project_root}' 디렉토리를 찾을 수 없습니다.")
+
+    # 최상위 디렉토리의 경로를 계산
+    project_root_path = current_file_path[:project_root_index + len(project_root)]
+    env_path = os.path.join(project_root_path, ".env")
+    return env_path
 
 class CoordinateSender(Node):
 
     def __init__(self, instance_id):
         super().__init__('coordinate_sender')
 
+        env_path = load_project_env()
+        load_dotenv(env_path)
+
         self.instance_id = instance_id
-        self.backend_url = "http://localhost:5000/uam/command/update"
+        self.backend_url = os.path.join(os.getenv("BACKEND_URL"), "uam/command/update")
 
 
         self.global_data = None
@@ -140,6 +161,7 @@ class CoordinateSender(Node):
 def main():
 
     instance_id = int(sys.argv[1])
+    # print(f"현재 경로: {os.path.abspath(__file__)}")
 
     rclpy.init()
     coordinate_sender = CoordinateSender(instance_id)

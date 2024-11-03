@@ -6,16 +6,33 @@ import json
 import aiohttp
 import time
 import sys
+from dotenv import load_dotenv
 
 # spawn_kill_drone.py 및 mission.py의 경로
-SPAWN_KILL_DRONE_SCRIPT = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/spawn_kill_drone.py"
-MISSION_SCRIPT = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/mission.py"
-SCENARIO_DIR = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/scenario"
-ROS2_TOPIC_CHECK_NODE_PATH = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/ws_ros2_drone"
+SPAWN_KILL_DRONE_SCRIPT = None
+MISSION_SCRIPT = None
+SCENARIO_DIR = None
+ROS2_TOPIC_CHECK_NODE_PATH = None
 
 
 # 백엔드 URL 설정 (예시)
-BACKEND_URL = "http://localhost:5000"
+BACKEND_URL = None
+
+def load_project_env():
+    # 현재 파일의 절대 경로를 얻어냄
+    current_file_path = os.path.abspath(__file__)
+    
+    # 최상위 디렉토리 'uam-control-system-simulator'를 찾음
+    project_root = "uam-control-system-simulator"
+    project_root_index = current_file_path.find(project_root)
+    
+    if project_root_index == -1:
+        raise FileNotFoundError(f"'{project_root}' 디렉토리를 찾을 수 없습니다.")
+
+    # 최상위 디렉토리의 경로를 계산
+    project_root_path = current_file_path[:project_root_index + len(project_root)]
+    env_path = os.path.join(project_root_path, ".env")
+    return env_path
 
 async def read_scenario_file(scenario_id):
     """Read scenario file and return drone info."""
@@ -287,7 +304,23 @@ async def main(scenario_id):
 
 if __name__ == "__main__":
     scenario_id = sys.argv[1]
-    
+
+    env_path = load_project_env()
+    print(f"env_path: {env_path}")
+    load_dotenv(env_path)
+
+    SPAWN_KILL_DRONE_SCRIPT = os.path.join(os.getenv("BASE_DIR"), os.getenv("SPAWN_KILL_DRONE_SCRIPT")[1:])
+    MISSION_SCRIPT = os.path.join(os.getenv("BASE_DIR"), os.getenv("MISSION_SCRIPT")[1:])
+    SCENARIO_DIR = os.path.join(os.getenv("BASE_DIR"), os.getenv("SCENARIO_DIR")[1:])
+    ROS2_TOPIC_CHECK_NODE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("ROS2_TOPIC_CHECK_NODE_PATH")[1:])
+
+    BACKEND_URL = os.getenv("BACKEND_URL")
+
+    # print(f"base: {os.getenv('BASE_DIR')}")
+    # print(f"spawn: {SPAWN_KILL_DRONE_SCRIPT}")
+    # print(f"check: {os.path.join(os.getenv('BASE_DIR'), os.getenv('SCENARIO_DIR'))}")
+    # print(f"scenario: {SCENARIO_DIR}")
+
     asyncio.run(main(scenario_id))
     
     

@@ -6,20 +6,37 @@ import signal
 import subprocess
 import time
 import requests
+from dotenv import load_dotenv
 
 # 홈 기본 좌표
 home_latitude = 35.8907
 home_longitude = 128.6122
 
-BACKEND_URL = "http://localhost:5000"
+BACKEND_URL = None
 
 # PX4-Autopilot 절대 경로 설정 (환경에 따라 수정)
-PX4_AUTOPILOT_DIR = "/home/rkdwhddud/uam-control-system-simulator/PX4-Autopilot"
+PX4_AUTOPILOT_DIR = None
 
 # 인스턴스 관리하는 txt 파일 경로 (환경에 따라 수정)
-INSTANCE_FILE_PATH = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/drone_instances.txt"
+INSTANCE_FILE_PATH = None
 
-ROS2_PRINT_NODE_PATH = "/home/rkdwhddud/uam-control-system-simulator/mavsdk/controller/ws_ros2_drone"
+ROS2_PRINT_NODE_PATH = None
+
+def load_project_env():
+    # 현재 파일의 절대 경로를 얻어냄
+    current_file_path = os.path.abspath(__file__)
+    
+    # 최상위 디렉토리 'uam-control-system-simulator'를 찾음
+    project_root = "uam-control-system-simulator"
+    project_root_index = current_file_path.find(project_root)
+    
+    if project_root_index == -1:
+        raise FileNotFoundError(f"'{project_root}' 디렉토리를 찾을 수 없습니다.")
+
+    # 최상위 디렉토리의 경로를 계산
+    project_root_path = current_file_path[:project_root_index + len(project_root)]
+    env_path = os.path.join(project_root_path, ".env")
+    return env_path
 
 def calculate_model_pose(home, target):# x, y의 좌표 계산해서 반환하는 함수
     
@@ -162,6 +179,14 @@ if __name__ == "__main__":
     parser.add_argument("--kill", action='store_true') # 명령줄 선언
 
     args = parser.parse_args()
+
+    env_path = load_project_env()
+    load_dotenv(env_path)
+
+    BACKEND_URL = BACKEND_URL = os.getenv("BACKEND_URL")
+    PX4_AUTOPILOT_DIR = os.path.join(os.getenv("BASE_DIR"), os.getenv("PX4_AUTOPILOT_DIR")[1:])
+    INSTANCE_FILE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("INSTANCE_FILE_PATH")[1:])
+    ROS2_PRINT_NODE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("ROS2_PRINT_NODE_PATH")[1:])
     
     if args.kill:
         kill_px4_process(args.instance_id)
