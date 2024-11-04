@@ -250,7 +250,7 @@ async def listen_for_commands():
 async def cancel_all_tasks():
     """Cancel all currently running asyncio tasks."""
     tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
-    print(tasks)
+    # print(tasks)
     for task in tasks:
         task.cancel()
         try:
@@ -296,6 +296,10 @@ async def main(scenario_id):
         #     print("미션이 백엔드에서 거부되었습니다. 모든 드론을 종료합니다.")
         #     await kill_drones(drone_data)
 
+    # except KeyboardInterrupt:
+    #     await cancel_all_tasks()
+    #     print("controller: main 비동기 작업 처리 후 종료")
+
     except Exception as e:
         print(f"main 함수에서 예외 발생: {e}")
         await kill_drones(drone_data)
@@ -320,7 +324,16 @@ if __name__ == "__main__":
     # print(f"spawn: {SPAWN_KILL_DRONE_SCRIPT}")
     # print(f"check: {os.path.join(os.getenv('BASE_DIR'), os.getenv('SCENARIO_DIR'))}")
     # print(f"scenario: {SCENARIO_DIR}")
+    try:
+        asyncio.run(main(scenario_id))
+    except KeyboardInterrupt as e:
+        print(f"scenario 종료, ctrl + c를 눌러 controller.py를 종료해 주세요: {e}")
+        try:
+            while True:
+                pass
+        except KeyboardInterrupt as e:
+            print(f"controller.py 종료")
 
-    asyncio.run(main(scenario_id))
-    
+    except Exception as e:
+        print(f"controller.py 종료됨: {e}")
     
