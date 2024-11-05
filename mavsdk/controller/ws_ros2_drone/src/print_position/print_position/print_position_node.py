@@ -141,7 +141,7 @@ class CoordinateSender(Node):
 
             try:
                 rep = requests.post(self.backend_url, json=data)
-                # print(f"{self.instance_id}번 드론 update post 완료")
+                # print(f"{self.instance_id}번 드론 속도 {data['speed']}")
             
             except Exception as e:
                 print(f"{self.instance_id}번 update error: {e}")

@@ -7,6 +7,8 @@ import aiohttp
 import time
 import sys
 from dotenv import load_dotenv
+import atexit
+import psutil
 
 # spawn_kill_drone.py 및 mission.py의 경로
 SPAWN_KILL_DRONE_SCRIPT = None
@@ -17,6 +19,24 @@ ROS2_TOPIC_CHECK_NODE_PATH = None
 
 # 백엔드 URL 설정 (예시)
 BACKEND_URL = None
+
+def cleanup():
+    print("Cleanup 실행")
+    parent_pid = os.getpid()
+    parent = psutil.Process(parent_pid)
+    
+    # 현재 프로세스의 모든 자식 프로세스 종료
+    for child in parent.children(recursive=True):
+        print(f"자식프로세스 종료: {child.pid}")
+        child.terminate()
+    
+    # 모든 자식 프로세스가 종료될 때까지 대기 후 강제 종료
+    # gone, still_alive = psutil.wait_procs(parent.children(), timeout=3)
+    # for p in still_alive:
+    #     print(f"프로세스 강제종료: {p.pid}")
+    #     p.kill()
+
+    # os.system("reset")  # 터미널 상태 복구
 
 def load_project_env():
     # 현재 파일의 절대 경로를 얻어냄
@@ -75,31 +95,33 @@ async def send_mission_to_backend(drone):
 
 async def listen_for_path_updates(drone_data):
     """ /uam/path에서 특정 드론 인스턴스의 경로 업데이트를 대기하여 run_mission을 호출 """
+    instance_ids = []
+    for drone in drone_data:
+        instance_ids.append(drone["instance_id"])
     async with aiohttp.ClientSession() as session:
         while True:
-            async with session.get(f"{BACKEND_URL}/uam/path") as response:
-                if response.status == 200:
-                    # json 객체를 하나 받아오기
-                    update = await response.json()
-                    
-                    # 업데이트 객체에서 instanceId 추출
-                    instance_id = update.get("instanceId")
-                    if instance_id is None:
-                        print("유효하지 않은 업데이트 데이터")
-                        continue
-                    
-                    # 해당 instanceId와 일치하는 드론 인스턴스 찾기
-                    drone_to_update = None
-                    for drone in drone_data:
-                        if drone["instance_id"] == instance_id:
-                            drone_to_update = drone
-                            break
-                    
-                    # 해당 드론 인스턴스가 존재하면 경로 업데이트 수행
-                    if drone_to_update:
-                        new_mission_items = update.get("coordinates")
-                        if new_mission_items:
-                            # 드론의 mission_items 업데이트
+            for instance_num in instance_ids:
+                async with session.get(f"{BACKEND_URL}/uam/path/{instance_num}") as response:
+                    if response.status == 200:
+                        # json 객체를 하나 받아오기
+                        coordinates = await response.json()
+                        
+                        # # 업데이트 객체에서 instanceId 추출
+                        # instance_id = update.get("instanceId")
+                        # if instance_id is None:
+                        #     print("유효하지 않은 업데이트 데이터")
+                        #     continue
+                        
+                        # 해당 instanceId와 일치하는 드론 인스턴스 찾기
+                        drone_to_update = None
+                        for drone in drone_data:
+                            if drone["instance_id"] == instance_num:
+                                drone_to_update = drone
+                                break
+                        
+                        # 해당 드론 인스턴스가 존재하면 경로 업데이트 수행
+                        if drone_to_update and coordinates:
+                            # 새로운 경로로 드론의 mission_items 업데이트
                             drone_to_update["mission_items"] = [
                                 {
                                     "latitude": coord["latitude"],
@@ -107,18 +129,18 @@ async def listen_for_path_updates(drone_data):
                                     "altitude": coord["altitude"],
                                     "speed": drone_to_update["speed"]
                                 }
-                                for coord in new_mission_items
+                                for coord in coordinates
                             ]
 
-                            # 업데이트된 드론 인스턴스를 JSON 배열 형식으로 run_mission 수행
-                            mission_data = {"drones": [drone_to_update]}
-                            # print(f"mission_data: {mission_data}")
-                            print(f"{instance_id}번 드론에 대한 업데이트 경로 미션 전달 시작.")
-                            await run_mission(mission_data["drones"])
-                            print(f"{instance_id}번 드론에 대한 업데이트 경로 미션 전달 완료.")
-                            # await asyncio.sleep(3)
+                        # 업데이트된 드론 인스턴스를 JSON 배열 형식으로 run_mission 수행
+                        mission_data = {"drones": [drone_to_update]}
+                        # print(f"mission_data: {mission_data}")
+                        print(f"{instance_num}번 드론에 대한 업데이트 경로 미션 전달 시작.")
+                        await run_mission(mission_data["drones"])
+                        print(f"{instance_num}번 드론에 대한 업데이트 경로 미션 전달 완료.")
+                        # await asyncio.sleep(3)
                     else:
-                        print(f"{instance_id}번 드론을 찾을 수 없음.")
+                        continue
             # await asyncio.sleep(1)
 
 async def handle_command(command):
@@ -172,13 +194,15 @@ async def spawn_drone(instance_id, latitude, longitude):
         # topic_check_process = subprocess.Popen(ros2_check_topic_command)
         topic_check_process = await asyncio.create_subprocess_exec(*ros2_check_topic_command, preexec_fn=os.setsid)
 
-        print(f"{instance_id}번 드론 토픽 확인 대기중.....")
-        await topic_check_process.wait()
-        print(f"{instance_id}번 드론 토픽 확인 완료")
+        try:
+            print(f"{instance_id}번 드론 토픽 확인 대기중.....")
+            await topic_check_process.wait()
+            print(f"{instance_id}번 드론 토픽 확인 완료")
 
-        if topic_check_process.returncode is None:  # returncode가 None이면 아직 실행 중
+            if topic_check_process.returncode is None:  # returncode가 None이면 아직 실행 중
+                os.killpg(os.getpgid(topic_check_process.pid), signal.SIGTERM)
+        except Exception as e:
             os.killpg(os.getpgid(topic_check_process.pid), signal.SIGTERM)
-            
 
         # await asyncio.sleep(1)
         # process.wait()
@@ -288,8 +312,8 @@ async def main(scenario_id):
         for drone in drone_data:
             await send_mission_to_backend(drone)
 
-        await asyncio.sleep(3)
-
+        # await asyncio.sleep(5)
+        
         await listen_for_path_updates(drone_data)
 
         # else:
@@ -333,6 +357,7 @@ if __name__ == "__main__":
                 pass
         except KeyboardInterrupt as e:
             print(f"controller.py 종료")
+            cleanup()
 
     except Exception as e:
         print(f"controller.py 종료됨: {e}")
