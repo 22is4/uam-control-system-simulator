@@ -31,7 +31,7 @@ def cleanup():
         child.terminate()
     
     # 모든 자식 프로세스가 종료될 때까지 대기 후 강제 종료
-    # gone, still_alive = psutil.wait_procs(parent.children(), timeout=3)
+    # gone, still_alive = psutil.wait_procs(parent.children())
     # for p in still_alive:
     #     print(f"프로세스 강제종료: {p.pid}")
     #     p.kill()
@@ -52,7 +52,7 @@ def load_project_env():
     # 최상위 디렉토리의 경로를 계산
     project_root_path = current_file_path[:project_root_index + len(project_root)]
     env_path = os.path.join(project_root_path, ".env")
-    return env_path
+    return env_path, project_root_path
 
 async def read_scenario_file(scenario_id):
     """Read scenario file and return drone info."""
@@ -192,6 +192,7 @@ async def spawn_drone(instance_id, latitude, longitude):
         # subprocess.Popen(['source', 'install/setup.bash'])
         # print_process = subprocess.Popen(ros2_print_command, preexec_fn=os.setsid)
         # topic_check_process = subprocess.Popen(ros2_check_topic_command)
+
         topic_check_process = await asyncio.create_subprocess_exec(*ros2_check_topic_command, preexec_fn=os.setsid)
 
         try:
@@ -333,14 +334,14 @@ async def main(scenario_id):
 if __name__ == "__main__":
     scenario_id = sys.argv[1]
 
-    env_path = load_project_env()
+    env_path, base_dir = load_project_env()
     print(f"env_path: {env_path}")
     load_dotenv(env_path)
 
-    SPAWN_KILL_DRONE_SCRIPT = os.path.join(os.getenv("BASE_DIR"), os.getenv("SPAWN_KILL_DRONE_SCRIPT")[1:])
-    MISSION_SCRIPT = os.path.join(os.getenv("BASE_DIR"), os.getenv("MISSION_SCRIPT")[1:])
-    SCENARIO_DIR = os.path.join(os.getenv("BASE_DIR"), os.getenv("SCENARIO_DIR")[1:])
-    ROS2_TOPIC_CHECK_NODE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("ROS2_TOPIC_CHECK_NODE_PATH")[1:])
+    SPAWN_KILL_DRONE_SCRIPT = os.path.join(base_dir, os.getenv("SPAWN_KILL_DRONE_SCRIPT"))
+    MISSION_SCRIPT = os.path.join(base_dir, os.getenv("MISSION_SCRIPT"))
+    SCENARIO_DIR = os.path.join(base_dir, os.getenv("SCENARIO_DIR"))
+    ROS2_TOPIC_CHECK_NODE_PATH = os.path.join(base_dir, os.getenv("ROS2_TOPIC_CHECK_NODE_PATH"))
 
     BACKEND_URL = os.getenv("BACKEND_URL")
 

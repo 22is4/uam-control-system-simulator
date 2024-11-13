@@ -36,7 +36,7 @@ def load_project_env():
     # 최상위 디렉토리의 경로를 계산
     project_root_path = current_file_path[:project_root_index + len(project_root)]
     env_path = os.path.join(project_root_path, ".env")
-    return env_path
+    return env_path, project_root_path
 
 def calculate_model_pose(home, target):# x, y의 좌표 계산해서 반환하는 함수
     
@@ -65,8 +65,8 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
     # PX4 명령어 작성
     # 왜인진 모르겠지만, y와 x의 자리가 바뀌어야 제대로 된 좌표에 드론이 생성됨
     px4_command = (
-        f"HEADLESS=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
-    f"PX4_GZ_MODEL=x500 EKF2_AID_MASK=24 EKF2_HGT_MODE=1 EKF2_MAG_TYPE=2 ./build/px4_sitl_default/bin/px4 -i {instance_id}"
+        f"HEADLESS=1 PX4_SYS_AUTOCONFIG=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
+        f"PX4_GZ_MODEL=x500 ./build/px4_sitl_default/bin/px4 -i {instance_id}"
     )
 
     ros2_print_command = ["bash", "-c", f"source install/setup.bash && ros2 run print_position print_position {instance_id}"]
@@ -174,13 +174,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    env_path = load_project_env()
+    env_path, base_dir = load_project_env()
     load_dotenv(env_path)
 
     BACKEND_URL = BACKEND_URL = os.getenv("BACKEND_URL")
-    PX4_AUTOPILOT_DIR = os.path.join(os.getenv("BASE_DIR"), os.getenv("PX4_AUTOPILOT_DIR")[1:])
-    INSTANCE_FILE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("INSTANCE_FILE_PATH")[1:])
-    ROS2_PRINT_NODE_PATH = os.path.join(os.getenv("BASE_DIR"), os.getenv("ROS2_PRINT_NODE_PATH")[1:])
+    PX4_AUTOPILOT_DIR = os.path.join(base_dir, os.getenv("PX4_AUTOPILOT_DIR"))
+    INSTANCE_FILE_PATH = os.path.join(base_dir, os.getenv("INSTANCE_FILE_PATH"))
+    ROS2_PRINT_NODE_PATH = os.path.join(base_dir, os.getenv("ROS2_PRINT_NODE_PATH"))
     
     if args.kill:
         kill_px4_process(args.instance_id)
