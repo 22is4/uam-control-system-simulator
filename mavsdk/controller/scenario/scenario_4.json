@@ -5,52 +5,52 @@
             "instance_id": 0,
             "latitude": 35.8907,
             "longitude": 128.6122,
-            "altitude": 50,
+            "altitude": 450,
             "speed": 10,
             "mission_items": [
-                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 50, "speed": 10}
+                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 450, "speed": 10}
             ]
         },
         {
             "instance_id": 1,
             "latitude": 35.8907,
             "longitude": 128.6039,
-            "altitude": 50,
+            "altitude": 450,
             "speed": 10,
             "mission_items": [
-                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 50, "speed": 10}
+                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 450, "speed": 10}
             ]
         },
         {
             "instance_id": 2,
             "latitude": 35.8847,
             "longitude": 128.6039,
-            "altitude": 50,
+            "altitude": 450,
             "speed": 10,
             "mission_items": [
-                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 50, "speed": 10}
+                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 450, "speed": 10}
             ]
         },
         {
             "instance_id": 3,
             "latitude": 35.8847,
             "longitude": 128.6122,
-            "altitude": 50,
+            "altitude": 450,
             "speed": 10,
             "mission_items": [
-                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 50, "speed": 10},
-                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 50, "speed": 10},
-                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 50, "speed": 10}
+                {"latitude": 35.8907, "longitude": 128.6122, "altitude": 450, "speed": 10},
+                {"latitude": 35.8907, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6039, "altitude": 450, "speed": 10},
+                {"latitude": 35.8847, "longitude": 128.6122, "altitude": 450, "speed": 10}
             ]
         }
     ]

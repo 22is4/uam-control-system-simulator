@@ -7,7 +7,7 @@ app = Flask(__name__)
 # 현재 대기 중인 명령 목록 (여기서 controller.py가 명령을 가져감)
 commands = []
 
-path_updates = []
+path_updates = {}
 
 @app.route('/uam/command/mission', methods=['POST'])
 def receive_mission():
@@ -18,55 +18,33 @@ def receive_mission():
     mission_items = mission_data.get("mission_items")
 
     if instance_id is not None and mission_items is not None:
-        path_data = {
-            "instanceId": instance_id,
-            "coordinates": [
+        path_data = [
                 {
                     "latitude": item["latitude"],
                     "longitude": item["longitude"],
                     "altitude": item["altitude"]
                 }
                 for item in mission_items
-            ]
-        }
+        ]
 
         #print(f"path_data: {path_data}")
 
         # /uam/path에 PUT 요청
-        try:
-            response = requests.put("http://localhost:5000/uam/path", json=path_data)
-            #print(f"{instance_id}번 드론의 미션 경로 게시 완료: {response.json().get('message')}, {response.json().get('instance_id')}, {response.json().get('coordinates')}")
-            return jsonify({"message": "미션 데이터 수신 및 경로 게시 완료"}), 200
-        except requests.exceptions.RequestException as e:
-            print(f"경로 게시 오류: {e}")
-            return jsonify({"message": "경로 게시 오류"}), 500
+        path_updates[instance_id] = path_data
+        print(f"{instance_id}번 드론의 미션 경로 게시 완료.")
+        # print("현재 path_updates 상태:", path_updates)
+        return jsonify({"message": "미션 데이터 수신 및 경로 게시 완료"}), 200
     else:
         return jsonify({"message": "유효하지 않은 미션 데이터"}), 400
     
-@app.route('/uam/path', methods=['PUT'])
-def update_path():
-    """/uam/path에 PUT 요청으로 받은 경로 업데이트 저장"""
-    update_data = request.json
-    print(update_data)
-    instance_id = update_data.get("instanceId")
-    coord = update_data.get("coordinates")
-
-    if instance_id != None and "coordinates" in update_data:
-        # 경로 업데이트를 저장
-        path_updates.append(update_data)
-        print(f"{instance_id}번 드론의 경로 업데이트 저장 완료.")
-        return jsonify({"message": "경로 업데이트 저장 완료"}), 200
-    else:
-        return jsonify({"message": "유효하지 않은 경로 업데이트 데이터", "instance_id":instance_id, "coordinates": coord}), 400
-    
-@app.route('/uam/path', methods=['GET'])
-def get_path_updates():
+@app.route('/uam/path/<int:instance_id>', methods=['GET'])
+def get_path_updates(instance_id):
     """/uam/path에서 대기 중인 경로 업데이트를 전송"""
-    global path_updates
-    if len(path_updates) != 0:
-        # 대기 중인 경로 업데이트가 있을 경우, 첫 번째 데이터를 반환하고 리스트에서 제거
-        next_update = path_updates.pop(0)
-        return jsonify(next_update), 200
+    update = path_updates.get(instance_id)
+    if update:
+        # 경로 업데이트가 있으면 반환 후, 해당 데이터 삭제
+        path_updates.pop(instance_id, None)
+        return jsonify(update), 200
     else:
         return jsonify({"message": "대기 중인 경로 업데이트 없음"}), 204
 
