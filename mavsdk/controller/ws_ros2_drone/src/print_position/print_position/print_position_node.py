@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 import requests
-from px4_msgs.msg import VehicleGlobalPosition, VehicleLocalPosition, VehicleLandDetected 
+from px4_msgs.msg import VehicleGlobalPosition, VehicleLocalPosition, VehicleStatus
 import sys
 import asyncio
 import aiohttp
@@ -57,11 +57,11 @@ class CoordinateSender(Node):
         if instance_id == 0:
             topic_global = '/fmu/out/vehicle_global_position'
             topic_local = '/fmu/out/vehicle_local_position'
-            topic_land = '/fmu/out/vehicle_land_detected'
+            topic_land = '/fmu/out/vehicle_status'
         else:
             topic_global = f'/px4_{instance_id}/fmu/out/vehicle_global_position'
             topic_local = f'/px4_{instance_id}/fmu/out/vehicle_local_position'
-            topic_land = f'/px4_{instance_id}/fmu/out/vehicle_land_detected'
+            topic_land = f'/px4_{instance_id}/fmu/out/vehicle_status'
 
         print(f"topic_global: {topic_global}")
         print(f"topic_local: {topic_local}")
@@ -82,11 +82,15 @@ class CoordinateSender(Node):
         self.subscription_local  # prevent unused variable warning
 
         self.subscription_land = self.create_subscription(
-            VehicleLandDetected,
+            VehicleStatus,
             topic_land,
             self.listener_land_callback,
             qos_profile)
         self.subscription_land  # prevent unused variable warning
+
+        self.timer_period = 0.3
+        self.timer = self.create_timer(self.timer_period, self.send_data)
+
 
     def listener_global_callback(self, msg):
         if self.global_data == None:
@@ -95,7 +99,7 @@ class CoordinateSender(Node):
                 "lon": msg.lon,
                 "alt": msg.alt
             }
-        self.send_data()
+        # self.send_data()
 
     def listener_local_callback(self, msg):
         if self.local_data == None:
@@ -106,25 +110,33 @@ class CoordinateSender(Node):
                 "vz":msg.vz,
                 "speed": math.sqrt(msg.vx**2 + msg.vy**2 + msg.vz**2)
             }
-        self.send_data()
+        # self.send_data()
 
     def listener_land_callback(self, msg):
-        if self.land_data == None:
-            status = None
-            if msg.landed:
-                status = "landed"
-            else:
-                status = "flying"
-            
-            self.land_data = {
-                "status": status
-            }
-        self.send_data()
+        # print('vehiche_status msg 받음')
+        
+        status = None
+        if msg.nav_state in [0, 18, 12, 20]:
+            status = "land"
+        elif msg.nav_state == 3:  # AUTO_MISSION
+            status = "mission mode"
+        elif msg.nav_state == 17:
+            status = "takeoff"
+        else:
+            status = "holding position"
+        
+        self.land_data = {
+            "status": status
+        }
+
+        # print(f"nav_state: {msg.nav_state}")
+        # self.send_data()
     
     def send_data(self):
+        # print(f'{self.instance_id}번 위치 update 전송 시도')
         if self.global_data and self.local_data and self.land_data:
             data = {
-                "instance_id": self.instance_id,
+                "instanceId": self.instance_id,
                 "latitude": self.global_data["lat"],
                 "longitude": self.global_data["lon"],
                 "altitude": self.global_data["lat"],
@@ -141,6 +153,7 @@ class CoordinateSender(Node):
 
             try:
                 rep = requests.post(self.backend_url, json=data)
+                # print(f'{self.instance_id}번 위치 update 전송 완료')
                 # print(f"{self.instance_id}번 드론 속도 {data['speed']}")
             
             except Exception as e:

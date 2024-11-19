@@ -1,0 +1,10 @@
+# ignore PX4 build
+PX4-Autopilot/
+
+# ignore ros2 build
+mavsdk/controller/ws_ros2_drone/build/
+mavsdk/controller/ws_ros2_drone/install/
+mavsdk/controller/ws_ros2_drone/log/
+
+
+QGroundControl.AppImage
