@@ -65,7 +65,7 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
     # PX4 명령어 작성
     # 왜인진 모르겠지만, y와 x의 자리가 바뀌어야 제대로 된 좌표에 드론이 생성됨
     px4_command = (
-        f"HEADLESS=1 PX4_SYS_AUTOCONFIG=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
+        f"HEADLESS=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE='{y_disp},{x_disp}' "
         f"PX4_GZ_MODEL=x500 ./build/px4_sitl_default/bin/px4 -i {instance_id}"
     )
 
@@ -93,13 +93,13 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
 
     creation_data = {
         "type": 0,  # 드론 생성 명령
-        "instance_id": instance_id,
+        "instanceId": instance_id,
         "latitude": target_latitude,
         "longitude": target_longitude
     }
 
     res = requests.post(f"{BACKEND_URL}/uam/command/create", json=creation_data)
-    print(f"드론 {instance_id} 생성 데이터 전송 완료: {res.json().get('message')}")
+    print(f"드론 {instance_id} 생성 데이터 전송 완료: {res.text}")
 
     try:
         # 프로세스가 끝날 때까지 대기
@@ -116,10 +116,10 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
 
         delete_data = {
             "type": 1,  # 드론 삭제 명령
-            "instance_id": instance_id
+            "instanceId": instance_id
         }
         res = requests.delete(f"{BACKEND_URL}/uam/command/delete", json=delete_data)
-        print(f"드론 종료 데이터 전송 완료: {res.json().get('message')}")
+        print(f"드론 {instance_id} 종료 데이터 전송 완료: {res.text}")
 
         exit(0)
 
