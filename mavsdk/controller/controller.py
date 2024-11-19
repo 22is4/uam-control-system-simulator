@@ -15,6 +15,7 @@ SPAWN_KILL_DRONE_SCRIPT = None
 MISSION_SCRIPT = None
 SCENARIO_DIR = None
 ROS2_TOPIC_CHECK_NODE_PATH = None
+INSTANCE_FILE_PATH = None
 
 
 # 백엔드 URL 설정 (예시)
@@ -22,6 +23,14 @@ BACKEND_URL = None
 
 def cleanup():
     print("Cleanup 실행")
+
+    try:
+        with open(INSTANCE_FILE_PATH, "w") as f:
+            pass  # 빈 파일로 만듦
+        print(f"{INSTANCE_FILE_PATH} 파일 초기화 완료")
+    except Exception as e:
+        print(f"{INSTANCE_FILE_PATH} 초기화 중 오류 발생: {e}")
+        
     parent_pid = os.getpid()
     parent = psutil.Process(parent_pid)
     
@@ -82,15 +91,16 @@ async def send_mission_to_backend(drone):
     async with aiohttp.ClientSession() as session:
         mission_data = {
             "type": 2,
-            "instance_id": drone["instance_id"],
-            "mission_items": drone["mission_items"]
+            "instanceId": drone["instance_id"],
+            "missionItems": drone["mission_items"]
         }
         async with session.post(f"{BACKEND_URL}/uam/command/mission", json=mission_data) as response:
             if response.status == 200:
-                message = await response.json()
-                print(f"{drone['instance_id']}번 드론 미션 데이터 전송 완료: {message.get('message')}")
+                message = await response.text()
+                print(f"{drone['instance_id']}번 드론 미션 데이터 전송 완료: {message}")
             else:
-                print(f"{drone['instance_id']}번 드론 미션 데이터 전송 실패: {response.status}")
+                message = await response.text()
+                print(f"{drone['instance_id']}번 드론 미션 데이터 전송 실패: {response.status}, {message}")
 
 
 async def listen_for_path_updates(drone_data):
@@ -138,10 +148,12 @@ async def listen_for_path_updates(drone_data):
                         print(f"{instance_num}번 드론에 대한 업데이트 경로 미션 전달 시작.")
                         await run_mission(mission_data["drones"])
                         print(f"{instance_num}번 드론에 대한 업데이트 경로 미션 전달 완료.")
+                        instance_ids.remove(instance_num)
                         # await asyncio.sleep(3)
                     else:
-                        continue
-            # await asyncio.sleep(1)
+                        print(f"{instance_num}번 경로 얻기 실패: {response.status}")
+                await asyncio.sleep(0.3)
+                print(f"{instance_num}번 드론 미션 get 요청 완료")
 
 async def handle_command(command):
     """비동기적으로 명령을 처리 (생성, 삭제, 미션)"""
@@ -312,6 +324,7 @@ async def main(scenario_id):
 
         for drone in drone_data:
             await send_mission_to_backend(drone)
+            await asyncio.sleep(1)
 
         # await asyncio.sleep(5)
         
@@ -342,6 +355,7 @@ if __name__ == "__main__":
     MISSION_SCRIPT = os.path.join(base_dir, os.getenv("MISSION_SCRIPT"))
     SCENARIO_DIR = os.path.join(base_dir, os.getenv("SCENARIO_DIR"))
     ROS2_TOPIC_CHECK_NODE_PATH = os.path.join(base_dir, os.getenv("ROS2_TOPIC_CHECK_NODE_PATH"))
+    INSTANCE_FILE_PATH = os.path.join(base_dir, os.getenv("INSTANCE_FILE_PATH"))
 
     BACKEND_URL = os.getenv("BACKEND_URL")
 
@@ -362,4 +376,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"controller.py 종료됨: {e}")
+        cleanup()
     
