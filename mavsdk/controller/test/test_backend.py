@@ -14,8 +14,8 @@ def receive_mission():
     """ 드론 미션을 수신하고 /uam/path에 PUT 요청으로 게시 """
     mission_data = request.json
     #print(f"mission_data: {mission_data}")
-    instance_id = mission_data.get("instance_id")
-    mission_items = mission_data.get("mission_items")
+    instance_id = mission_data.get("instanceId")
+    mission_items = mission_data.get("missionItems")
 
     if instance_id is not None and mission_items is not None:
         path_data = [
