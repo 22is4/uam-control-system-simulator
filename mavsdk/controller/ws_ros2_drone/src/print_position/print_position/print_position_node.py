@@ -104,6 +104,7 @@ class CoordinateSender(Node):
     def listener_local_callback(self, msg):
         if self.local_data == None:
             self.local_data = {
+                # "alt": msg.z,
                 "relative_alt": msg.z,
                 "vx":msg.vx,
                 "vy":msg.vy,
@@ -139,7 +140,7 @@ class CoordinateSender(Node):
                 "instanceId": self.instance_id,
                 "latitude": self.global_data["lat"],
                 "longitude": self.global_data["lon"],
-                "altitude": self.global_data["lat"],
+                "altitude": self.global_data["alt"],
                 "vx": self.local_data["vx"],
                 "vy": self.local_data["vy"],
                 "vz": self.local_data["vz"],
@@ -155,6 +156,7 @@ class CoordinateSender(Node):
                 rep = requests.post(self.backend_url, json=data)
                 # print(f'{self.instance_id}번 위치 update 전송 완료')
                 # print(f"{self.instance_id}번 드론 속도 {data['speed']}")
+                # print(f"{self.instance_id}번 드론 고도 {data['altitude']}")
             
             except Exception as e:
                 print(f"{self.instance_id}번 update error: {e}")
