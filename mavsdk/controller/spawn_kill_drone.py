@@ -69,7 +69,7 @@ def spawn_drone_at_target(target_latitude, target_longitude, instance_id): # px4
         f"PX4_GZ_MODEL=x500 ./build/px4_sitl_default/bin/px4 -i {instance_id}"
     )
 
-    ros2_print_command = ["bash", "-c", f"source install/setup.bash && ros2 run print_position print_position {instance_id}"]
+    ros2_print_command = ["bash", "-c", f"source install/setup.bash && ros2 run print_position print_position {instance_id} --ros-args -p use_sim_time:=true"]
     try:
         # PX4-Autopilot 디렉토리로 이동
         os.chdir(PX4_AUTOPILOT_DIR)
