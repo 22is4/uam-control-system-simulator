@@ -50,6 +50,27 @@ async def upload_and_start_mission(drone, mission_items, init_speed, instance_id
         MissionItem.VehicleAction.NONE
     ) for item in mission_items])
 
+    last_item = mission_items[-1]
+    mission_plan.mission_items.append(
+        MissionItem(
+            last_item["latitude"], 
+            last_item["longitude"], 
+            0.0,  # 고도를 0으로 설정해 착륙
+            last_item["speed"],
+            False,  # 착륙이므로 fly-through는 False
+            float('nan'),
+            float('nan'),
+            MissionItem.CameraAction.NONE,
+            float('nan'),
+            float('nan'),
+            float('nan'),
+            float('nan'),
+            float('nan'),
+            MissionItem.VehicleAction.LAND  # 착륙 동작
+        )
+    )
+
+
     # 미션 업로드
     print(f"-- {instance_id}번 드론 미션 업로드")
     await drone.mission.upload_mission(mission_plan)
