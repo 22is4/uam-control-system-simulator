@@ -1,0 +1,46 @@
+{
+    "scenario_id": 5,
+    "drones": [
+        {
+            "instance_id": 0,
+            "latitude": 35.89341,
+            "longitude": 128.61416,
+            "altitude": 450,
+            "speed": 10,
+            "mission_items": [
+                {"latitude": 35.88654, "longitude": 128.60971, "altitude": 450, "speed": 10}
+            ]
+        },
+        {
+            "instance_id": 1,
+            "latitude": 35.89243,
+            "longitude": 128.60985,
+            "altitude": 450,
+            "speed": 10,
+            "mission_items": [
+                {"latitude": 35.88717, "longitude": 128.60608, "altitude": 450, "speed": 10}
+            ]
+        },
+        {
+            "instance_id": 2,
+            "latitude": 35.88652,
+            "longitude": 128.60785,
+            "altitude": 450,
+            "speed": 10,
+            "mission_items": [
+                {"latitude": 35.88953, "longitude": 128.61493, "altitude": 450, "speed": 10}
+            ]
+        },
+        {
+            "instance_id": 3,
+            "latitude": 35.88550,
+            "longitude": 128.61446,
+            "altitude": 450,
+            "speed": 10,
+            "mission_items": [
+                {"latitude": 35.89440, "longitude": 128.61241, "altitude": 450, "speed": 10}
+            ]
+        }
+    ]
+}
+
